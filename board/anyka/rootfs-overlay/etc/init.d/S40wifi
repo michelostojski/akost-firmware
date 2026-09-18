@@ -1,0 +1,21 @@
+#!/bin/sh
+[ "$1" = "start" ] || exit 0
+M=/usr/modules
+modprobe cfg80211
+insmod $M/ak_hcd.ko
+insmod $M/atbm603x_x_usb.ko
+i=0; while [ ! -e /sys/class/net/wlan0 ] && [ $i -lt 120 ]; do sleep 0.5; i=$((i+1)); done
+[ -e /sys/module/atbm603x_x_usb/parameters/atbm_printk_mask ] && \
+  echo 0 > /sys/module/atbm603x_x_usb/parameters/atbm_printk_mask
+[ -e /sys/class/net/wlan0 ] || { echo "wifi: no wlan0"; exit 0; }
+# when ipcd is enabled, its netmgr handles wifi
+[ -f /etc/config/ipcd.enable ] && exit 0
+SRC=/etc/config/wifi.conf
+CONF=/tmp/wpa_supplicant.conf
+[ -f $SRC ] || { echo "wifi: no $SRC"; exit 0; }
+SSID=$(sed -n 's/^ssid=//p' $SRC | tr -d '\r' | head -1)
+PSK=$(sed -n 's/^psk=//p' $SRC | tr -d '\r' | head -1)
+printf 'network={\n ssid="%s"\n psk="%s"\n scan_ssid=1\n}\n' "$SSID" "$PSK" > $CONF
+chmod 600 $CONF
+wpa_supplicant -B -Dnl80211 -i wlan0 -c $CONF
+udhcpc -b -i wlan0 -S

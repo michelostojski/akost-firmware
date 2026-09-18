@@ -1,0 +1,52 @@
+#!/bin/sh
+# Thingino-style SD update for GNCC GK2 (writes KERNEL, ROOTFS, APP only)
+[ "$1" = "start" ] || exit 0
+BB=/bin/busybox
+SD=/tmp/sd
+IMG=$SD/autoupdate-full.bin
+
+i=0; while [ ! -b /dev/mmcblk0 ] && [ $i -lt 10 ]; do $BB sleep 0.5; i=$((i+1)); done
+DEV=/dev/mmcblk0p1; [ -b $DEV ] || DEV=/dev/mmcblk0
+
+$BB mkdir -p $SD
+$BB mount -t vfat $DEV $SD 2>/dev/null || { echo "autoupdate: cannot mount $DEV"; exit 0; }
+[ -f $IMG ] || { $BB umount $SD; exit 0; }
+
+log() { echo "autoupdate: $*" | $BB tee -a $SD/autoupdate.log; }
+reject() { log "$1, not flashing"; $BB mv $IMG $SD/autoupdate-full.bad; $BB sync; $BB umount $SD; exit 0; }
+
+[ "$($BB wc -c < $IMG)" -eq 8388608 ] || reject "bad size"
+magic() { $BB dd if=$IMG bs=1 skip=$(($1)) count=4 2>/dev/null | $BB hexdump -v -e '4/1 "%02x"'; }
+[ "$(magic 0x4e000)" = 27051956 ] || reject "no uImage at 0x4e000"
+[ "$(magic 0x210000)" = 68737173 ] || reject "no squashfs at 0x210000"
+[ "$(magic 0x40c000)" = 68737173 ] || reject "no squashfs at 0x40c000"
+if [ -f $IMG.md5 ]; then
+  (cd $SD && $BB md5sum -c autoupdate-full.bin.md5) || reject "md5 mismatch"
+fi
+$BB grep -q '^mtd4:.*"KERNEL"' /proc/mtd && \
+$BB grep -q '^mtd5:.*"ROOTFS"' /proc/mtd && \
+$BB grep -q '^mtd7:.*"APP"'    /proc/mtd || reject "unexpected partition table"
+
+R=/tmp/upd
+$BB mkdir -p $R/bin $R/lib $R/dev $R/proc $R/sd
+$BB cp -a /lib/*.so* $R/lib/
+$BB cp /bin/busybox $R/bin/
+$BB mount -o bind /dev $R/dev
+$BB mount -t proc proc $R/proc
+$BB mount -o bind $SD $R/sd
+log "flashing"
+# stop everything running from /usr before overwriting APP
+$BB killall ipcd crond dropbear wpa_supplicant udhcpc hostapd 2>/dev/null
+$BB sleep 1
+$BB umount /usr 2>/dev/null || $BB umount -l /usr
+
+$BB chroot $R /bin/busybox sh -c '
+BB=/bin/busybox; I=/sd/autoupdate-full.bin; L=/sd/autoupdate.log
+$BB dd if=$I of=/dev/mtdblock7 bs=4096 skip=1036 count=1012 conv=fsync &&
+$BB dd if=$I of=/dev/mtdblock4 bs=4096 skip=78   count=450  conv=fsync &&
+$BB dd if=$I of=/dev/mtdblock5 bs=4096 skip=528  count=408  conv=fsync &&
+{ echo "autoupdate: done" >> $L; $BB mv $I /sd/autoupdate-full.done; } ||
+  echo "autoupdate: FAILED, use U-Boot test_file recovery" >> $L
+$BB sync; $BB sleep 1
+$BB reboot -f
+'

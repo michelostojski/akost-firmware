@@ -1,0 +1,11 @@
+interface=wlan0
+ctrl_interface=/tmp/hostapd
+ssid=AKOST-0000
+channel=1
+hw_mode=g
+ieee80211n=1
+wmm_enabled=1
+ht_capab=[SHORT-GI-20]
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0

@@ -1,0 +1,9 @@
+interface wlan0
+start 10.1.8.20
+end 10.1.8.254
+max_leases 52
+option subnet 255.255.255.0
+opt router 10.1.8.1
+opt dns 10.1.8.1
+option lease 864000
+option domain local

@@ -1,0 +1,6 @@
+config BR2_PACKAGE_IPCD
+	bool "Anyka IPCD"
+	select BR2_PACKAGE_ANYKA_LIBS
+	select BR2_PACKAGE_ANYKA_MODULES
+	help
+	  GNCC GK2 IPC daemon with ONVIF, RTSP, PTZ and day/night support.

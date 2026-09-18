@@ -1,0 +1,4 @@
+config BR2_PACKAGE_ANYKA_LIBS
+	bool "anyka-libs"
+	help
+	  Proprietary Anyka SDK shared libraries and ISP config.

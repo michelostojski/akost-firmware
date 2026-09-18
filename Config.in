@@ -1,0 +1,13 @@
+menu "Anyka firmware"
+
+source "$BR2_EXTERNAL_ANYKA_PATH/Config.soc.in"
+
+menu "Packages"
+
+source "$BR2_EXTERNAL_ANYKA_PATH/package/anyka-libs/Config.in"
+source "$BR2_EXTERNAL_ANYKA_PATH/package/anyka-modules/Config.in"
+source "$BR2_EXTERNAL_ANYKA_PATH/package/ipcd/Config.in"
+
+endmenu
+
+endmenu

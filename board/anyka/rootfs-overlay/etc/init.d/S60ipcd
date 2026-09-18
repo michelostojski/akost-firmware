@@ -1,0 +1,41 @@
+#!/bin/sh
+case "$1" in
+  start)
+    [ -f /etc/config/ipcd.enable ] || { echo "ipcd: not enabled"; exit 0; }
+    mkdir -p /tmp/hostapd
+    : > /var/lib/misc/udhcpd.leases 2>/dev/null
+
+    # portal defaults on a blank CONFIG partition; SSID carries the MAC suffix
+    if [ ! -f /etc/config/hostapd.conf ] && [ -f /etc/hostapd.conf.default ]; then
+      SUF=$(sed 's/://g' /sys/class/net/wlan0/address 2>/dev/null | tail -c 5)
+      [ -n "$SUF" ] || SUF=0000
+      sed "s/^ssid=.*/ssid=AKOST-$SUF/" /etc/hostapd.conf.default > /etc/config/hostapd.conf
+    fi
+    [ -f /etc/config/udhcpd.conf ] || cp /etc/udhcpd.conf.default /etc/config/udhcpd.conf
+
+    start-stop-daemon -S -b -m -p /var/run/ipcd.pid -x /bin/sh -- -c \
+      "exec /usr/bin/ipcd --sensor-cfg /etc/config/isp_f37p_mipi_1lane_h3b.conf > /tmp/ipcd.log 2>&1"
+
+    # No credentials: ipcd serves the portal but cannot raise the AP itself
+    # (its readiness check never passes on the ATBM driver), so we own the AP.
+    if [ ! -f /etc/config/wifi.conf ]; then
+      (
+        sleep 60                      # let ipcd finish its 3 failed AP attempts
+        mkdir -p /tmp/hostapd
+        /usr/sbin/hostapd -B /etc/config/hostapd.conf
+        sleep 3
+        ifconfig wlan0 10.1.8.1 netmask 255.255.255.0
+        : > /var/lib/misc/udhcpd.leases
+        udhcpd /etc/config/udhcpd.conf
+        # credentials arrive via the portal: reboot into station mode,
+        # the driver cannot switch wlan0 from AP back to STA in place
+        while [ ! -f /etc/config/wifi.conf ]; do sleep 2; done
+        sleep 3; sync; reboot
+      ) &
+    fi
+    ;;
+  stop)
+    start-stop-daemon -K -p /var/run/ipcd.pid
+    killall ipcd hostapd udhcpd 2>/dev/null
+    ;;
+esac

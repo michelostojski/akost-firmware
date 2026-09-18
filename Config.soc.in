@@ -1,0 +1,14 @@
+menu "SoC Configuration"
+
+choice
+	prompt "Anyka SoC"
+	default BR2_SOC_AK3918EV330
+
+config BR2_SOC_AK3918EV330
+	bool "AK3918EV330"
+	help
+	  Anyka AK3918EV330 camera SoC.
+
+endchoice
+
+endmenu

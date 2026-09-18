@@ -1,0 +1,4 @@
+config BR2_PACKAGE_ANYKA_MODULES
+	bool "anyka-modules"
+	help
+	  Stock GK2 kernel modules (SD, ISP, F37P sensor, audio, wifi, motor).
