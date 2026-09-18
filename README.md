@@ -114,7 +114,7 @@ unsquashfs -d stock_root mtd5.bin    # ROOTFS
 unsquashfs -d stock_app  mtd7.bin    # APP
 ```
 
-### 1. Anyka userspace libraries → `external/package/anyka-libs/files/`
+### 1. Anyka userspace libraries → `package/anyka-libs/files/`
 
 `ipcd` links against the vendor's media stack: `libplat_*.so`, `libmpi_*.so`,
 `libapp_*.so`, `libak*.so` — 23 libraries in total. Copy `lib/*.so*` from
@@ -129,7 +129,7 @@ that and the build fails at the link step with missing symbols.
 toolchain step never copies it to the target even though `ipcd` declares it as
 `NEEDED`. The `ipcd` package installs it explicitly from `STAGING_DIR`.
 
-### 2. Stock kernel modules → `external/package/anyka-modules/files/`
+### 2. Stock kernel modules → `package/anyka-modules/files/`
 
 Fifteen `.ko` files from `stock_app/modules/`:
 
@@ -152,7 +152,7 @@ each module's undefined symbols against your kernel's `System.map`. Note that
 a passing symbol check proves names exist, not that *structures* match — see
 the USB bug below.
 
-### 3. Vendor-patched `cfg80211.ko` → `external/board/anyka/stock/`
+### 3. Vendor-patched `cfg80211.ko` → `board/anyka/stock/`
 
 **From `stock_root`**, not from APP:
 
@@ -171,7 +171,7 @@ kernel with it.
 `post-build.sh` installs the stock module over the one the kernel built. No
 kernel config option fixes this.
 
-### 4. Stock `hostapd` (v2.8) → `external/board/anyka/stock/`
+### 4. Stock `hostapd` (v2.8) → `board/anyka/stock/`
 
 From `stock_app/sbin/hostapd`. Needed only for the setup portal.
 
@@ -201,7 +201,7 @@ it's extracted like everything else for consistency.
 ```bash
 # Buildroot 2025.02.18, built out of tree
 B=/path/to/output
-F=/path/to/akost-firmware/external
+F=/path/to/akost-firmware
 cd /path/to/buildroot-2025.02.18
 make O=$B BR2_EXTERNAL=$F gncc_gk2_defconfig
 make O=$B BR2_EXTERNAL=$F
