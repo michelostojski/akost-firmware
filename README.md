@@ -367,6 +367,10 @@ scripts/
   check-module-symbols.sh      verify modules against your kernel
   gk2-update.sh                build, verify, copy to SD card
 docs/
+  01-flash-layout-and-backup.md
+  02-building.md
+  03-flashing-and-recovery.md
+  04-wifi-portal.md
   05-troubleshooting.md
 ```
 
