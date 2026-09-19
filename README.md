@@ -106,7 +106,7 @@ the script is auditable and so you can do it yourself if your camera differs.
 ## Vendor files: what's needed and where it comes from
 
 All of these come out of a full flash backup of your own camera (see
-`docs/01-flash-layout-and-backup.md`). Unpack the two squashfs partitions
+the backup section below). Unpack the two squashfs partitions
 first:
 
 ```bash
@@ -367,10 +367,6 @@ scripts/
   check-module-symbols.sh      verify modules against your kernel
   gk2-update.sh                build, verify, copy to SD card
 docs/
-  01-flash-layout-and-backup.md
-  02-building.md
-  03-flashing-and-recovery.md
-  04-wifi-portal.md
   05-troubleshooting.md
 ```
 
