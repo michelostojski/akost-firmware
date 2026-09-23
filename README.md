@@ -1,5 +1,7 @@
 # akost-firmware
+# Anyka AK39EV330 Open-Source Firmware
 
+Open-source Linux firmware for **Anyka AK39EV330 IP cameras**.
 Buildroot firmware for **Anyka AK39EV330** cameras — currently the **GNCC GK2**
 and **GNCC GT1 Pro** (and their Nooie / AK\_IPC rebadges). Replaces the stock
 cloud firmware entirely:
