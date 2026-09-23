@@ -1,0 +1,19 @@
+#!/bin/sh
+# Capture the end-of-boot state to the SD card, then unmount cleanly.
+[ "$1" = "start" ] || exit 0
+L=/tmp/sd/boot.log
+[ -d /tmp/sd ] || exit 0
+mountpoint -q /tmp/sd 2>/dev/null || exit 0
+
+sleep 25
+{
+  echo "--- after 25s"
+  echo "modules: $(lsmod | wc -l)"
+  ls /sys/class/net/ 2>/dev/null | tr '\n' ' '; echo
+  ip addr show wlan0 2>/dev/null | grep -E "inet |state" 
+  echo "processes:"; ps | grep -E "ipcd|wpa_supplicant|udhcpc|hostapd" | grep -v grep
+  echo "--- ipcd.log"; tail -25 /tmp/ipcd.log 2>/dev/null
+  echo "--- messages"; tail -25 /var/log/messages 2>/dev/null
+  echo "--- dmesg wifi"; dmesg | grep -iE "wlan|atbm|usb 1-1" | tail -15
+} >> $L
+sync

@@ -12,8 +12,8 @@ endef
 define ANYKA_LIBS_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/usr/lib
 	cp -a $(@D)/lib/*.so* $(TARGET_DIR)/usr/lib/
-	$(INSTALL) -D -m 0644 $(@D)/etc/isp_f37p_mipi_1lane_h3b.conf \
-		$(TARGET_DIR)/etc/isp_f37p_mipi_1lane_h3b.conf
+	mkdir -p $(TARGET_DIR)/etc
+	cp -a $(@D)/etc/isp_*.conf $(TARGET_DIR)/etc/
 endef
 
 $(eval $(generic-package))

@@ -1,8 +1,17 @@
 #!/bin/sh
 case "$1" in
   start)
-    [ -f /etc/config/ipcd.enable ] || { echo "ipcd: not enabled"; exit 0; }
+    # SD-card escape hatch; S06sdlog keeps the card mounted at /tmp/sd
+    [ -f /tmp/sd/noipcd ] && { echo "ipcd: disabled by SD"; exit 0; }
+    [ -f /etc/config/ipcd.disable ] && { echo "ipcd: disabled"; exit 0; }
     mkdir -p /tmp/hostapd
+    ISPCFG=$(ls /etc/config/isp_*.conf 2>/dev/null | head -1)
+    [ -f /tmp/sd/ipcd.args ] && cp /tmp/sd/ipcd.args /etc/config/ipcd.args
+    IPCD_ARGS=$(cat /etc/config/ipcd.args 2>/dev/null)
+    IPCD_LOG=/tmp/ipcd.log; mountpoint -q /tmp/sd && IPCD_LOG=/tmp/sd/ipcd.log
+    [ -f "$IPCD_LOG" ] && mv -f "$IPCD_LOG" "$IPCD_LOG.prev"
+    [ -f /tmp/sd/sensor.init ] && cp /tmp/sd/sensor.init /etc/config/sensor.init
+    [ -n "$ISPCFG" ] || ISPCFG=$(ls /etc/isp_*.conf 2>/dev/null | head -1)
     : > /var/lib/misc/udhcpd.leases 2>/dev/null
 
     # portal defaults on a blank CONFIG partition; SSID carries the MAC suffix
@@ -14,13 +23,23 @@ case "$1" in
     [ -f /etc/config/udhcpd.conf ] || cp /etc/udhcpd.conf.default /etc/config/udhcpd.conf
 
     start-stop-daemon -S -b -m -p /var/run/ipcd.pid -x /bin/sh -- -c \
-      "exec /usr/bin/ipcd --sensor-cfg /etc/config/isp_f37p_mipi_1lane_h3b.conf > /tmp/ipcd.log 2>&1"
+      "exec /usr/bin/ipcd --sensor-cfg \"$ISPCFG\" $IPCD_ARGS > $IPCD_LOG 2>&1"
+
+    # per-camera sensor register writes (e.g. flip/mirror on SOI JX-Q03),
+    # done outside ipcd once capture is running
+    if [ -f /etc/config/sensor.init ]; then
+      ( sleep 15; while true; do sh /etc/config/sensor.init >/dev/null 2>&1; sleep 60; done ) &
+    fi
 
     # No credentials: ipcd serves the portal but cannot raise the AP itself
     # (its readiness check never passes on the ATBM driver), so we own the AP.
     if [ ! -f /etc/config/wifi.conf ]; then
       (
-        sleep 60                      # let ipcd finish its 3 failed AP attempts
+        # wait for ipcd to exhaust its own AP attempts (its readiness
+        # check never passes on the ATBM driver), then own the AP
+        i=0
+        while ! grep -q 'AP start failed 3 times' /tmp/ipcd.log 2>/dev/null \
+              && [ $i -lt 90 ]; do sleep 1; i=$((i+1)); done
         mkdir -p /tmp/hostapd
         /usr/sbin/hostapd -B /etc/config/hostapd.conf
         sleep 3

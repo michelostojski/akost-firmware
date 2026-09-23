@@ -1,0 +1,34 @@
+#!/bin/sh
+# Mount the SD card at /tmp/sd and start a boot log on it.
+# Without a serial console this is the only way to see what happened.
+[ "$1" = "start" ] || exit 0
+
+i=0; while [ ! -b /dev/mmcblk0p1 ] && [ ! -b /dev/mmcblk0 ] && [ $i -lt 20 ]; do
+  sleep 0.5; i=$((i+1))
+done
+DEV=/dev/mmcblk0p1; [ -b $DEV ] || DEV=/dev/mmcblk0
+[ -b $DEV ] || exit 0
+
+# the updater may still have it mounted from earlier in boot
+umount /tmp/sd 2>/dev/null
+mkdir -p /tmp/sd
+mountpoint -q /tmp/sd || mount -t vfat -o sync $DEV /tmp/sd 2>/dev/null
+mountpoint -q /tmp/sd || { echo "sdlog: cannot mount $DEV"; exit 0; }
+
+L=/tmp/sd/boot.log
+{
+  echo "=============================================="
+  echo "boot at $(date) — $(uname -v)"
+  echo "wifi.conf: $([ -f /etc/config/wifi.conf ] && echo present || echo ABSENT)"
+  echo "ipcd.disable: $([ -f /etc/config/ipcd.disable ] && echo yes || echo no)"
+  echo "noipcd on card: $([ -f /tmp/sd/noipcd ] && echo yes || echo no)"
+} >> $L
+sync
+
+# let the SD card supply wifi credentials (no console on some cameras)
+if [ -f /tmp/sd/wifi.conf ]; then
+  cp /tmp/sd/wifi.conf /etc/config/wifi.conf
+  chmod 600 /etc/config/wifi.conf
+  echo "sdlog: installed wifi.conf from card" >> /tmp/sd/boot.log
+  sync
+fi

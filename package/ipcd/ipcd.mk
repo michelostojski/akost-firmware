@@ -4,9 +4,9 @@
 #
 ################################################################################
 
-IPCD_VERSION = v0.3.0-gk2
-IPCD_SITE = https://github.com/michelostojski/ipcd.git
-IPCD_SITE_METHOD = git
+IPCD_VERSION = local
+IPCD_SITE = $(BR2_EXTERNAL_ANYKA_PATH)/package/ipcd/src
+IPCD_SITE_METHOD = local
 
 # ipcd links against the Anyka SDK blobs, so anyka-libs must be built and
 # staged first.
@@ -16,13 +16,13 @@ IPCD_DEPENDENCIES = anyka-libs
 # extraction path).
 define IPCD_BUILD_CMDS
 	$(TARGET_MAKE_ENV) \
-		$(MAKE) -C $(@D)/src/ipcd \
+		$(MAKE) -C $(@D) \
 		TOOLCHAIN="$(HOST_DIR)/bin" \
 		LIB_DIR="$(STAGING_DIR)/usr/lib"
 endef
 
 define IPCD_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0755 $(@D)/src/ipcd/ipcd $(TARGET_DIR)/usr/bin/ipcd
+	$(INSTALL) -D -m 0755 $(@D)/ipcd $(TARGET_DIR)/usr/bin/ipcd
 	$(INSTALL) -D -m 0755 $(STAGING_DIR)/usr/lib/librt.so $(TARGET_DIR)/lib/librt.so
 endef
 

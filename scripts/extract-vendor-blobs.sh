@@ -57,6 +57,8 @@ STOCK_APP="$WORK/app"
 LIBDIR="$EXT/package/anyka-libs/lib"
 ETCDIR="$EXT/package/anyka-libs/etc"
 mkdir -p "$LIBDIR" "$ETCDIR"
+# a tree holds one camera at a time
+rm -f "$ETCDIR"/isp_*.conf
 
 echo "== Anyka userspace libraries -> package/anyka-libs/lib/"
 n=$(find "$STOCK_APP/lib" -maxdepth 1 -name "*.so*" 2>/dev/null | wc -l)
@@ -69,7 +71,7 @@ for want in libplat_mem.so libplat_vi.so libmpi_venc.so libakv_encode.so; do
 done
 
 echo "== ISP sensor tuning -> package/anyka-libs/etc/"
-isp=$(find "$STOCK_APP/etc" "$STOCK_ROOT/etc" -maxdepth 1 -name "isp_*.conf" 2>/dev/null | head -1)
+isp=$(find "$STOCK_ROOT" "$STOCK_APP" -name "isp_*.conf" 2>/dev/null | head -1)
 if [ -n "$isp" ]; then
     cp -a "$isp" "$ETCDIR/"
     ok "$(basename "$isp")"
@@ -84,9 +86,10 @@ fi
 # ------------------------------------------------------------------ modules --
 MODDIR="$EXT/package/anyka-modules/files"
 mkdir -p "$MODDIR"
+rm -f "$MODDIR"/sensor_*.ko
 
 MODULES="ak_rtc ak_i2c ak_pcm ak_gpio_keys ak_ion ak_leds ak_mci ak_uio
-         exfat ak_motor ak_saradc ak_isp sensor_f37p ak_hcd atbm603x_x_usb"
+         exfat ak_motor ak_saradc ak_isp ak_hcd atbm603x_x_usb"
 
 echo "== stock kernel modules -> package/anyka-modules/files/"
 missing=0
@@ -102,7 +105,10 @@ done
 [ "$missing" -eq 0 ] && ok "15 modules" || warn "$missing module(s) missing — your camera may differ"
 
 # sensor modules vary per camera; say which one is actually present
-sensors=$(ls "$STOCK_APP/modules" 2>/dev/null | grep '^sensor_' | tr '\n' ' ')
+for sk in "$STOCK_APP"/modules/sensor_*.ko; do
+    [ -e "$sk" ] && cp -a "$sk" "$MODDIR/" && ok "$(basename "$sk")"
+done
+sensors=$(ls "$MODDIR" | grep '^sensor_' | tr '\n' ' ')
 [ -n "$sensors" ] && echo "     sensor modules on this camera: $sensors"
 
 # ------------------------------------------------------- vendor cfg80211.ko --

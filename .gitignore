@@ -24,3 +24,4 @@ mtd*.bin
 dl/
 package/anyka-libs/etc/
 package/ipcd/src/
+!docs/img/*.jpg

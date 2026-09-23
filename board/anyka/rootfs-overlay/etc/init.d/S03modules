@@ -3,6 +3,7 @@
 # quiet console before any module loads (LED driver floods at level 6)
 echo 1 > /proc/sys/kernel/printk
 M=/usr/modules
+log3() { echo "S03: $*" >> /tmp/sd/boot.log 2>/dev/null; echo "S03: $*"; }
 echo 256 > /proc/sys/vm/min_free_kbytes
 
 # SD card first (in rootfs, needed by autoupdate)
@@ -12,7 +13,8 @@ insmod /lib/modules/ak_mci.ko sdio_clk_mode=1
 mkdir -p /etc/config
 mount -t jffs2 /dev/mtdblock6 /etc/config
 
-[ -d $M ] || { echo "modules: /usr not mounted"; exit 0; }
+log3 "usr mounted: $(mount | grep -c /usr) ; modules dir: $([ -d $M ] && echo yes || echo NO)"
+[ -d $M ] || exit 0
 insmod $M/ak_rtc.ko && hwclock -s
 for m in ak_i2c ak_pcm ak_gpio_keys ak_ion ak_leds; do insmod $M/$m.ko; done
 echo 1 > /sys/class/leds/red_led/brightness 2>/dev/null
@@ -20,10 +22,12 @@ for m in ak_uio exfat ak_motor ak_saradc; do insmod $M/$m.ko; done
 
 # sensor (same as stock sensor_module_load.sh)
 insmod $M/ak_isp.ko
-insmod $M/sensor_f37p.ko
-if [ ! -f /etc/config/isp_f37p_mipi_1lane_h3b.conf ]; then
+for s in $M/sensor_*.ko; do [ -e "$s" ] && insmod "$s"; done
+# ISP tuning belongs to the sensor: copy it in if CONFIG doesn't have this one
+ISP=$(ls /etc/isp_*.conf 2>/dev/null | head -1)
+if [ -n "$ISP" ] && [ ! -f "/etc/config/$(basename "$ISP")" ]; then
   rm -f /etc/config/isp_*.conf
-  cp /etc/isp_f37p_mipi_1lane_h3b.conf /etc/config/
+  cp "$ISP" /etc/config/
 fi
 
 # entropy seed across boots (no hwrng on this SoC; hostapd needs it for WPA)
