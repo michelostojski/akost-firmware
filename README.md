@@ -3,7 +3,7 @@
 
 Open-source Linux firmware for **Anyka AK39EV330 IP cameras**.
 Buildroot firmware for **Anyka AK39EV330** cameras — currently the **GNCC GK2**
-and **GNCC GT1 Pro** (and their Nooie / AK\_IPC rebadges). Replaces the stock
+and **GNCC GT1 Pro**. Replaces the stock
 cloud firmware entirely:
 a Buildroot rootfs with SSH, an SD-card update mechanism, the vendor kernel and
 media drivers, and [`ipcd`](https://github.com/medevil84/ipcd) providing RTSP,
